@@ -1,0 +1,627 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Diagnosi da sintomi (dataset SymbiPredict 2022)</title>
+  <style>
+    :root {
+      --bg: #070A12;
+      --panel: #0E1630;
+      --panel2:#0A1024;
+      --text: #F2F6FF;
+      --muted:#A8B5D6;
+      --border:#273B6A;
+      --accent:#7C4DFF;   /* violet */
+      --accent2:#00D4FF;  /* cyan */
+      --good:#24E5A3;
+      --warn:#FFCC66;
+      --bad:#FF5A7A;
+      --shadow: 0 14px 40px rgba(0,0,0,.45);
+      --radius: 16px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: radial-gradient(1200px 800px at 20% 10%, #142034 0%, var(--bg) 55%) fixed;
+      color: var(--text);
+    }
+    header {
+      padding: 18px 18px 10px;
+      position: sticky;
+      top: 0;
+      background: linear-gradient(to bottom, rgba(11,15,20,.92), rgba(11,15,20,.55));
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(36,50,68,.55);
+      z-index: 10;
+    }
+    header h1 {
+      margin: 0 0 6px;
+      font-size: 18px;
+      letter-spacing: .2px;
+    }
+    header .sub {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.35;
+    }
+    main {
+      display: grid;
+      grid-template-columns: 1.35fr .95fr;
+      gap: 14px;
+      padding: 14px 18px 22px;
+      max-width: 1300px;
+      margin: 0 auto;
+    }
+    @media (max-width: 980px) {
+      main { grid-template-columns: 1fr; }
+    }
+    .card {
+      background: linear-gradient(180deg, rgba(17,24,36,.92), rgba(15,22,32,.92));
+      border: 1px solid rgba(36,50,68,.65);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .card .hd {
+      padding: 12px 14px;
+      border-bottom: 1px solid rgba(36,50,68,.55);
+      display:flex;
+      align-items:center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .card .hd h2 {
+      margin: 0;
+      font-size: 14px;
+      letter-spacing: .2px;
+    }
+    .card .bd {
+      padding: 12px 14px 14px;
+    }
+    .toolbar {
+      display:flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items:center;
+      justify-content: space-between;
+    }
+    .lefttools {
+      display:flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items:center;
+      width: 100%;
+    }
+    .search {
+      flex: 1 1 260px;
+      display:flex;
+      gap: 8px;
+      align-items:center;
+      background: rgba(7,10,14,.55);
+      border: 1px solid rgba(36,50,68,.8);
+      border-radius: 12px;
+      padding: 8px 10px;
+    }
+    .search input {
+      width: 100%;
+      border: 0;
+      outline: none;
+      background: transparent;
+      color: var(--text);
+      font-size: 14px;
+    }
+    .btn {
+      border: 1px solid rgba(36,50,68,.85);
+      background: rgba(7,10,14,.55);
+      color: var(--text);
+      padding: 8px 10px;
+      border-radius: 12px;
+      cursor: pointer;
+      font-size: 13px;
+      transition: transform .06s ease, border-color .12s ease;
+      user-select: none;
+      white-space: nowrap;
+    }
+    .btn:hover { border-color: rgba(106,169,255,.85); }
+    .btn:active { transform: translateY(1px); }
+    .btn.primary {
+      background: linear-gradient(90deg, rgba(124,77,255,.28), rgba(0,212,255,.18));
+      border-color: rgba(124,77,255,.65);
+    }
+    .meta {
+      display:flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 10px;
+    }
+    .grid {
+      display:grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+    @media (max-width: 1200px) {
+      .grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 520px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+    details {
+      border: 1px solid rgba(36,50,68,.6);
+      border-radius: 12px;
+      background: rgba(7,10,14,.35);
+      overflow: hidden;
+    }
+    summary {
+      cursor: pointer;
+      padding: 10px 10px;
+      list-style: none;
+      display:flex;
+      justify-content: space-between;
+      align-items:center;
+      gap: 10px;
+      color: var(--text);
+      font-size: 13px;
+    }
+    summary::-webkit-details-marker { display:none; }
+    .countpill {
+      font-size: 11px;
+      color: var(--muted);
+      border: 1px solid rgba(36,50,68,.7);
+      border-radius: 999px;
+      padding: 2px 8px;
+    }
+    .sym-list {
+      max-height: 260px;
+      overflow: auto;
+      padding: 8px 8px 10px;
+      border-top: 1px solid rgba(36,50,68,.55);
+    }
+    .sym {
+      display:flex;
+      align-items:center;
+      gap: 8px;
+      padding: 7px 8px;
+      border-radius: 10px;
+      border: 1px solid rgba(36,50,68,0);
+    }
+    .sym:hover {
+      border-color: rgba(36,50,68,.55);
+      background: rgba(17,24,36,.45);
+    }
+    .sym input { transform: translateY(1px); }
+    .sym label {
+      cursor: pointer;
+      font-size: 13px;
+      color: var(--text);
+      line-height: 1.25;
+    }
+    .chips {
+      display:flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .chip {
+      font-size: 12px;
+      color: var(--text);
+      border: 1px solid rgba(36,50,68,.75);
+      background: rgba(7,10,14,.35);
+      border-radius: 999px;
+      padding: 5px 10px;
+    }
+    .results {
+      display:flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .res {
+      border: 1px solid rgba(36,50,68,.65);
+      border-radius: 12px;
+      background: rgba(7,10,14,.35);
+      padding: 10px 10px;
+    }
+    .res .top {
+      display:flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 10px;
+    }
+    .res .name {
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .res .score {
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .bar {
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(36,50,68,.55);
+      overflow: hidden;
+      margin: 8px 0 6px;
+    }
+    .bar > div {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, rgba(124,77,255,.95), rgba(0,212,255,.85), rgba(36,229,163,.85));
+    }
+    .small {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+    .hint {
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 12px;
+      padding: 10px;
+      border: 1px dashed rgba(36,50,68,.75);
+      border-radius: 12px;
+      background: rgba(7,10,14,.25);
+    }
+    .kbd {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 11px;
+      padding: 2px 6px;
+      border: 1px solid rgba(36,50,68,.75);
+      border-radius: 6px;
+      background: rgba(7,10,14,.45);
+      color: var(--text);
+    }
+  </style>
+</head>
+<body>
+<header>
+  <h1>Diagnosi da sintomi (offline)</h1>
+  <div class="sub">
+    Seleziona i sintomi e il sistema calcola le diagnosi più probabili usando un <b>prototipo</b> per ciascuna patologia (sintomi più frequenti nel dataset).<br/>
+    Pulsante <b>Random</b>: genera sintomi coerenti con una patologia casuale e poi ricalcola la diagnosi.
+  </div>
+</header>
+
+<main>
+  <section class="card">
+    <div class="hd">
+      <h2>Sintomi</h2>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <button class="btn" id="btnReset" title="Deseleziona tutto">Reset</button>
+        <button class="btn primary" id="btnRandom" title="Genera sintomi casuali e prova la diagnosi">Random</button>
+      </div>
+    </div>
+    <div class="bd">
+      <div class="toolbar">
+        <div class="lefttools">
+          <div class="search" title="Cerca un sintomo (anche per parola)">
+            🔎 <input id="q" placeholder="Cerca sintomi (es. febbre, dolore, urine…)" autocomplete="off" />
+          </div>
+          <button class="btn" id="btnExpand">Apri tutto</button>
+          <button class="btn" id="btnCollapse">Chiudi tutto</button>
+        </div>
+      </div>
+      <div class="meta">
+        <div>Selezionati: <span id="selCount">0</span></div>
+        <div>Totale sintomi: <span id="totCount">0</span></div>
+        <div><span class="kbd">Tip</span> Scrivi nella ricerca e poi spunta</div>
+      </div>
+
+      <div id="groups" class="grid" style="margin-top: 12px;"></div>
+
+      <div class="chips" id="chips"></div>
+    </div>
+  </section>
+
+  <aside class="card">
+    <div class="hd">
+      <h2>Risultato</h2>
+      <div class="countpill" id="randomTruth" style="display:none;"></div>
+    </div>
+    <div class="bd">
+      
+      <div style="margin-bottom:12px; padding:10px; border:1px solid rgba(39,59,106,.65); border-radius:14px; background: rgba(7,10,14,.22);">
+        <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center; justify-content:space-between;">
+          <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+            <div class="small" style="font-weight:600; color: var(--text);">Vista inversa</div>
+            <div class="small">Scegli una patologia per vedere i sintomi più tipici (prototipo)</div>
+          </div>
+        </div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; align-items:center;">
+          <select id="diagSelect" style="flex:1 1 260px; padding:10px 10px; border-radius:12px; border:1px solid rgba(39,59,106,.85); background: rgba(7,10,14,.45); color: var(--text);">
+          </select>
+          <button class="btn" id="btnShowDiag">Mostra</button>
+          <button class="btn primary" id="btnApplyDiag" title="Seleziona i sintomi del prototipo di questa patologia">Applica ai sintomi</button>
+        </div>
+        <div id="diagProto" class="small" style="margin-top:10px; color: var(--muted);"></div>
+      </div>
+
+      <div class="results" id="results"></div>
+      <div class="hint">
+        <b>Come funziona il punteggio</b><br/>
+        Per ogni diagnosi confronto i sintomi selezionati con il suo prototipo: uso una variante del coefficiente di Jaccard
+        (intersezione/unione) con una piccola penalità per sintomi “extra”.<br/>
+        Questo è un dimostratore didattico: non è un dispositivo medico.
+      </div>
+    </div>
+  </aside>
+</main>
+
+<script>
+const DATA = {"symptoms": [{"id": "prurito", "label": "prurito"}, {"id": "eruzione_cutanea", "label": "eruzione cutanea"}, {"id": "eruzioni_cutanee_nodulari", "label": "eruzioni cutanee nodulari"}, {"id": "starnuti_continui", "label": "starnuti continui"}, {"id": "brividi", "label": "brividi"}, {"id": "brividi_di_freddo", "label": "brividi di freddo"}, {"id": "dolore_articolare", "label": "dolore articolare"}, {"id": "dolore_addominale", "label": "dolore addominale"}, {"id": "acidità", "label": "acidità"}, {"id": "ulcere_sulla_lingua", "label": "ulcere sulla lingua"}, {"id": "atrofia_muscolare", "label": "atrofia muscolare"}, {"id": "vomito", "label": "vomito"}, {"id": "bruciore_urinario", "label": "bruciore urinario"}, {"id": "perdite_urinarie", "label": "perdite urinarie"}, {"id": "affaticamento", "label": "affaticamento"}, {"id": "aumento_di_peso", "label": "aumento di peso"}, {"id": "ansia", "label": "ansia"}, {"id": "mani_e_piedi_freddi", "label": "mani e piedi freddi"}, {"id": "sbalzi_d_umore", "label": "sbalzi d umore"}, {"id": "perdita_di_peso", "label": "perdita di peso"}, {"id": "irrequietezza", "label": "irrequietezza"}, {"id": "letargia", "label": "letargia"}, {"id": "placche_in_gola", "label": "placche in gola"}, {"id": "livelli_di_zucchero_irregolari", "label": "livelli di zucchero irregolari"}, {"id": "tosse", "label": "tosse"}, {"id": "febbre_alta", "label": "febbre alta"}, {"id": "occhi_infossati", "label": "occhi infossati"}, {"id": "mancanza_di_respiro", "label": "mancanza di respiro"}, {"id": "sudorazione", "label": "sudorazione"}, {"id": "disidratazione", "label": "disidratazione"}, {"id": "indigestione", "label": "indigestione"}, {"id": "mal_di_testa", "label": "mal di testa"}, {"id": "pelle_giallastra", "label": "pelle giallastra"}, {"id": "urine_scure", "label": "urine scure"}, {"id": "nausea", "label": "nausea"}, {"id": "perdita_di_appetito", "label": "perdita di appetito"}, {"id": "dolore_dietro_gli_occhi", "label": "dolore dietro gli occhi"}, {"id": "mal_di_schiena", "label": "mal di schiena"}, {"id": "stitichezza", "label": "stitichezza"}, {"id": "dolore_addominale", "label": "dolore addominale"}, {"id": "diarrea", "label": "diarrea"}, {"id": "febbre_lieve", "label": "febbre lieve"}, {"id": "urine_gialle", "label": "urine gialle"}, {"id": "ingiallimento_degli_occhi", "label": "ingiallimento degli occhi"}, {"id": "insufficienza_epatica_acuta", "label": "insufficienza epatica acuta"}, {"id": "sovraccarico_di_liquidi", "label": "sovraccarico di liquidi"}, {"id": "gonfiore_addominale", "label": "gonfiore addominale"}, {"id": "linfonodi_ingrossati", "label": "linfonodi ingrossati"}, {"id": "malessere", "label": "malessere"}, {"id": "visione_offuscata_e_distorta", "label": "visione offuscata e distorta"}, {"id": "catarro", "label": "catarro"}, {"id": "irritazione_della_gola", "label": "irritazione della gola"}, {"id": "arrossamento_degli_occhi", "label": "arrossamento degli occhi"}, {"id": "pressione_ai_seni_nasali", "label": "pressione ai seni nasali"}, {"id": "naso_che_cola", "label": "naso che cola"}, {"id": "congestione", "label": "congestione"}, {"id": "dolore_toracico", "label": "dolore toracico"}, {"id": "debolezza_agli_arti", "label": "debolezza agli arti"}, {"id": "tachicardia", "label": "tachicardia"}, {"id": "dolore_durante_la_defecazione", "label": "dolore durante la defecazione"}, {"id": "dolore_alla_regione_anale", "label": "dolore alla regione anale"}, {"id": "feci_con_sangue", "label": "feci con sangue"}, {"id": "irritazione_anale", "label": "irritazione anale"}, {"id": "dolore_al_collo", "label": "dolore al collo"}, {"id": "vertigini", "label": "vertigini"}, {"id": "crampi", "label": "crampi"}, {"id": "lividi", "label": "lividi"}, {"id": "obesità", "label": "obesità"}, {"id": "gambe_gonfie", "label": "gambe gonfie"}, {"id": "vasi_sanguigni_gonfi", "label": "vasi sanguigni gonfi"}, {"id": "viso_e_occhi_gonfi", "label": "viso e occhi gonfi"}, {"id": "tiroide_ingrossata", "label": "tiroide ingrossata"}, {"id": "unghie_fragili", "label": "unghie fragili"}, {"id": "estremità_gonfie", "label": "estremità gonfie"}, {"id": "fame_eccessiva", "label": "fame eccessiva"}, {"id": "rapporti_extraconiugali", "label": "rapporti extraconiugali"}, {"id": "labbra_secche_e_formicolanti", "label": "labbra secche e formicolanti"}, {"id": "eloquio_confuso", "label": "eloquio confuso"}, {"id": "dolore_al_ginocchio", "label": "dolore al ginocchio"}, {"id": "dolore_all_anca", "label": "dolore all anca"}, {"id": "debolezza_muscolare", "label": "debolezza muscolare"}, {"id": "rigidità_del_collo", "label": "rigidità del collo"}, {"id": "articolazioni_gonfie", "label": "articolazioni gonfie"}, {"id": "rigidità_nei_movimenti", "label": "rigidità nei movimenti"}, {"id": "sensazione_di_rotazione", "label": "sensazione di rotazione"}, {"id": "perdita_di_equilibrio", "label": "perdita di equilibrio"}, {"id": "instabilità", "label": "instabilità"}, {"id": "debolezza_di_un_lato_del_corpo", "label": "debolezza di un lato del corpo"}, {"id": "perdita_dell_olfatto", "label": "perdita dell olfatto"}, {"id": "fastidio_vescicale", "label": "fastidio vescicale"}, {"id": "odore_sgradevole_delle_urine", "label": "odore sgradevole delle urine"}, {"id": "stimolo_urinario_continuo", "label": "stimolo urinario continuo"}, {"id": "flatulenza", "label": "flatulenza"}, {"id": "prurito_interno", "label": "prurito interno"}, {"id": "aspetto_tossico", "label": "aspetto tossico"}, {"id": "depressione", "label": "depressione"}, {"id": "irritabilità", "label": "irritabilità"}, {"id": "dolore_muscolare", "label": "dolore muscolare"}, {"id": "alterazione_dello_stato_mentale", "label": "alterazione dello stato mentale"}, {"id": "macchie_rosse_sul_corpo", "label": "macchie rosse sul corpo"}, {"id": "dolore_all_addome", "label": "dolore all addome"}, {"id": "mestruazioni_anomale", "label": "mestruazioni anomale"}, {"id": "macchie_discromiche", "label": "macchie discromiche"}, {"id": "lacrimazione", "label": "lacrimazione"}, {"id": "appetito_aumentato", "label": "appetito aumentato"}, {"id": "poliuria", "label": "poliuria"}, {"id": "storia_familiare", "label": "storia familiare"}, {"id": "espettorato_mucoso", "label": "espettorato mucoso"}, {"id": "espettorato_color_ruggine", "label": "espettorato color ruggine"}, {"id": "difficoltà_di_concentrazione", "label": "difficoltà di concentrazione"}, {"id": "disturbi_visivi", "label": "disturbi visivi"}, {"id": "trasfusione_di_sangue", "label": "trasfusione di sangue"}, {"id": "iniezioni_non_sterili", "label": "iniezioni non sterili"}, {"id": "coma", "label": "coma"}, {"id": "emorragia_gastrica", "label": "emorragia gastrica"}, {"id": "distensione_addominale", "label": "distensione addominale"}, {"id": "storia_di_consumo_di_alcol", "label": "storia di consumo di alcol"}, {"id": "sovraccarico_di_liquidi", "label": "sovraccarico di liquidi"}, {"id": "sangue_nell_espettorato", "label": "sangue nell espettorato"}, {"id": "vene_evidenti_al_polpaccio", "label": "vene evidenti al polpaccio"}, {"id": "palpitazioni", "label": "palpitazioni"}, {"id": "camminata_dolorosa", "label": "camminata dolorosa"}, {"id": "brufoli_con_pus", "label": "brufoli con pus"}, {"id": "punti_neri", "label": "punti neri"}, {"id": "desquamazione", "label": "desquamazione"}, {"id": "desquamazione_cutanea", "label": "desquamazione cutanea"}, {"id": "desquamazione_argentea", "label": "desquamazione argentea"}, {"id": "piccole_depressioni_nelle_unghie", "label": "piccole depressioni nelle unghie"}, {"id": "unghie_infiammate", "label": "unghie infiammate"}, {"id": "vesciche", "label": "vesciche"}, {"id": "piaghe_rosse_attorno_al_naso", "label": "piaghe rosse attorno al naso"}, {"id": "secrezione_crostosa_gialla", "label": "secrezione crostosa gialla"}], "prototypes": {"Infezione fungina": ["eruzione_cutanea", "eruzioni_cutanee_nodulari", "macchie_discromiche", "prurito"], "Allergia": ["brividi", "brividi_di_freddo", "lacrimazione", "starnuti_continui"], "Malattia da reflusso gastroesofageo": ["acidità", "dolore_addominale", "dolore_toracico", "tosse", "ulcere_sulla_lingua", "vomito"], "Colestasi cronica": ["dolore_addominale", "ingiallimento_degli_occhi", "nausea", "pelle_giallastra", "perdita_di_appetito", "prurito", "vomito"], "Reazione a farmaci": ["bruciore_urinario", "dolore_addominale", "eruzione_cutanea", "perdite_urinarie", "prurito"], "Ulcera peptica": ["dolore_addominale", "flatulenza", "indigestione", "perdita_di_appetito", "prurito_interno", "vomito"], "AIDS": ["atrofia_muscolare", "febbre_alta", "placche_in_gola", "rapporti_extraconiugali"], "Diabete": ["affaticamento", "appetito_aumentato", "fame_eccessiva", "irrequietezza", "letargia", "livelli_di_zucchero_irregolari", "obesità", "perdita_di_peso", "poliuria", "visione_offuscata_e_distorta"], "Gastroenterite": ["diarrea", "disidratazione", "occhi_infossati", "vomito"], "Asma bronchiale": ["affaticamento", "espettorato_mucoso", "febbre_alta", "mancanza_di_respiro", "storia_familiare", "tosse"], "Ipertensione": ["difficoltà_di_concentrazione", "dolore_toracico", "mal_di_testa", "perdita_di_equilibrio", "vertigini"], "Emicrania": ["acidità", "depressione", "disturbi_visivi", "fame_eccessiva", "indigestione", "irritabilità", "mal_di_testa", "rigidità_del_collo", "visione_offuscata_e_distorta"], "Spondilosi cervicale": ["debolezza_agli_arti", "dolore_al_collo", "mal_di_schiena", "perdita_di_equilibrio", "vertigini"], "Paralisi da emorragia cerebrale": ["alterazione_dello_stato_mentale", "debolezza_di_un_lato_del_corpo", "mal_di_testa", "vomito"], "Ittero": ["affaticamento", "dolore_addominale", "febbre_alta", "pelle_giallastra", "perdita_di_peso", "prurito", "urine_scure", "vomito"], "Malaria": ["brividi_di_freddo", "diarrea", "dolore_muscolare", "febbre_alta", "mal_di_testa", "nausea", "sudorazione", "vomito"], "Varicella": ["affaticamento", "eruzione_cutanea", "febbre_alta", "febbre_lieve", "letargia", "linfonodi_ingrossati", "macchie_rosse_sul_corpo", "mal_di_testa", "malessere", "perdita_di_appetito", "prurito"], "Dengue": ["affaticamento", "brividi_di_freddo", "dolore_articolare", "dolore_dietro_gli_occhi", "dolore_muscolare", "eruzione_cutanea", "febbre_alta", "macchie_rosse_sul_corpo", "mal_di_schiena", "mal_di_testa", "malessere", "nausea", "perdita_di_appetito", "vomito"], "Febbre tifoide": ["affaticamento", "aspetto_tossico", "brividi_di_freddo", "diarrea", "dolore_addominale", "dolore_all_addome", "febbre_alta", "mal_di_testa", "nausea", "stitichezza", "vomito"], "Epatite A": ["diarrea", "dolore_addominale", "dolore_articolare", "dolore_muscolare", "febbre_lieve", "ingiallimento_degli_occhi", "nausea", "pelle_giallastra", "perdita_di_appetito", "urine_scure", "vomito"], "Epatite B": ["affaticamento", "dolore_addominale", "ingiallimento_degli_occhi", "iniezioni_non_sterili", "letargia", "malessere", "pelle_giallastra", "perdita_di_appetito", "prurito", "trasfusione_di_sangue", "urine_gialle", "urine_scure"], "Epatite C": ["affaticamento", "ingiallimento_degli_occhi", "nausea", "pelle_giallastra", "perdita_di_appetito", "storia_familiare"], "Epatite D": ["affaticamento", "dolore_addominale", "dolore_articolare", "ingiallimento_degli_occhi", "nausea", "pelle_giallastra", "perdita_di_appetito", "urine_scure", "vomito"], "Epatite E": ["affaticamento", "coma", "dolore_addominale", "dolore_articolare", "emorragia_gastrica", "febbre_alta", "ingiallimento_degli_occhi", "insufficienza_epatica_acuta", "nausea", "pelle_giallastra", "perdita_di_appetito", "urine_scure", "vomito"], "Epatite alcolica": ["distensione_addominale", "dolore_addominale", "gonfiore_addominale", "pelle_giallastra", "sovraccarico_di_liquidi", "storia_di_consumo_di_alcol", "vomito"], "Tubercolosi": ["affaticamento", "brividi_di_freddo", "catarro", "dolore_toracico", "febbre_alta", "febbre_lieve", "ingiallimento_degli_occhi", "linfonodi_ingrossati", "malessere", "mancanza_di_respiro", "perdita_di_appetito", "perdita_di_peso", "sangue_nell_espettorato", "sudorazione", "tosse", "vomito"], "Raffreddore comune": ["affaticamento", "arrossamento_degli_occhi", "brividi_di_freddo", "catarro", "congestione", "dolore_muscolare", "dolore_toracico", "febbre_alta", "irritazione_della_gola", "linfonodi_ingrossati", "mal_di_testa", "malessere", "naso_che_cola", "perdita_dell_olfatto", "pressione_ai_seni_nasali", "starnuti_continui", "tosse"], "Polmonite": ["affaticamento", "brividi_di_freddo", "catarro", "dolore_toracico", "espettorato_color_ruggine", "febbre_alta", "malessere", "mancanza_di_respiro", "sudorazione", "tachicardia", "tosse"], "Emorroidi": ["dolore_alla_regione_anale", "dolore_durante_la_defecazione", "feci_con_sangue", "irritazione_anale", "stitichezza"], "Infarto miocardico": ["dolore_toracico", "mancanza_di_respiro", "sudorazione", "vomito"], "Vene varicose": ["affaticamento", "crampi", "gambe_gonfie", "lividi", "obesità", "vasi_sanguigni_gonfi", "vene_evidenti_al_polpaccio"], "Ipotiroidismo": ["affaticamento", "aumento_di_peso", "depressione", "estremità_gonfie", "irritabilità", "letargia", "mani_e_piedi_freddi", "mestruazioni_anomale", "sbalzi_d_umore", "tiroide_ingrossata", "unghie_fragili", "vertigini", "viso_e_occhi_gonfi"], "Ipertiroidismo": ["affaticamento", "debolezza_muscolare", "diarrea", "fame_eccessiva", "irrequietezza", "irritabilità", "mestruazioni_anomale", "perdita_di_peso", "sbalzi_d_umore", "sudorazione", "tachicardia"], "Ipoglicemia": ["affaticamento", "ansia", "eloquio_confuso", "fame_eccessiva", "irritabilità", "labbra_secche_e_formicolanti", "mal_di_testa", "nausea", "palpitazioni", "sudorazione", "visione_offuscata_e_distorta", "vomito"], "Artrosi": ["articolazioni_gonfie", "camminata_dolorosa", "dolore_al_collo", "dolore_al_ginocchio", "dolore_all_anca", "dolore_articolare"], "Artrite": ["articolazioni_gonfie", "camminata_dolorosa", "debolezza_muscolare", "rigidità_del_collo", "rigidità_nei_movimenti"], "Vertigini": ["instabilità", "mal_di_testa", "nausea", "perdita_di_equilibrio", "sensazione_di_rotazione", "vomito"], "Acne": ["brufoli_con_pus", "desquamazione", "eruzione_cutanea", "punti_neri"], "Infezione delle vie urinarie": ["bruciore_urinario", "fastidio_vescicale", "odore_sgradevole_delle_urine", "stimolo_urinario_continuo"], "Psoriasi": ["desquamazione_argentea", "desquamazione_cutanea", "dolore_articolare", "eruzione_cutanea", "piccole_depressioni_nelle_unghie", "unghie_infiammate"], "Impetigine": ["eruzione_cutanea", "febbre_alta", "piaghe_rosse_attorno_al_naso", "secrezione_crostosa_gialla", "vesciche"]}, "diagnoses": ["AIDS", "Acne", "Allergia", "Artrite", "Artrosi", "Asma bronchiale", "Colestasi cronica", "Dengue", "Diabete", "Emicrania", "Emorroidi", "Epatite A", "Epatite B", "Epatite C", "Epatite D", "Epatite E", "Epatite alcolica", "Febbre tifoide", "Gastroenterite", "Impetigine", "Infarto miocardico", "Infezione delle vie urinarie", "Infezione fungina", "Ipertensione", "Ipertiroidismo", "Ipoglicemia", "Ipotiroidismo", "Ittero", "Malaria", "Malattia da reflusso gastroesofageo", "Paralisi da emorragia cerebrale", "Polmonite", "Psoriasi", "Raffreddore comune", "Reazione a farmaci", "Spondilosi cervicale", "Tubercolosi", "Ulcera peptica", "Varicella", "Vene varicose", "Vertigini"]};
+const S2LABEL = Object.fromEntries(DATA.symptoms.map(o => [o.id, o.label]));
+
+// --- Vista inversa: diagnosi -> prototipo sintomi ---
+function fillDiagnosisSelect() {
+  const sel = document.getElementById('diagSelect');
+  if (!sel) return;
+  sel.innerHTML = DATA.diagnoses.map(d => `<option value="${d}">${d}</option>`).join("");
+}
+
+function showDiagnosisPrototype(diag) {
+  const box = document.getElementById('diagProto');
+  if (!box) return;
+  const proto = DATA.prototypes[diag] || [];
+  if (!proto.length) {
+    box.textContent = "Nessun prototipo disponibile per questa patologia.";
+    return;
+  }
+  const labels = proto.map(s => S2LABEL[s] || s).sort((a,b)=>a.localeCompare(b,'it'));
+  box.innerHTML = `<b>Prototipo (${proto.length} sintomi):</b><br/>` + labels.join(", ");
+}
+
+function applyDiagnosisPrototype(diag) {
+  const proto = DATA.prototypes[diag] || [];
+  if (!proto.length) return;
+  applySelection(proto);
+}
+
+
+// Raggruppo per lettera iniziale (in base alla label), per una UI più scorrevole
+function makeGroups(symptoms) {
+  const groups = new Map();
+  for (const s of symptoms) {
+    const letter = (s.label[0] || '#').toUpperCase();
+    if (!groups.has(letter)) groups.set(letter, []);
+    groups.get(letter).push(s);
+  }
+  // ordina lettere e sintomi
+  const ordered = [...groups.entries()].sort((a,b)=>a[0].localeCompare(b[0],'it'));
+  for (const [k, arr] of ordered) {
+    arr.sort((x,y)=>x.label.localeCompare(y.label,'it'));
+  }
+  return ordered;
+}
+
+const state = {
+  selected: new Set(),
+  query: "",
+  openAll: false,
+  lastRandomTruth: null
+};
+
+function renderGroups() {
+  const q = state.query.trim().toLowerCase();
+  const filtered = q
+    ? DATA.symptoms.filter(s => s.label.toLowerCase().includes(q) || s.id.toLowerCase().includes(q))
+    : DATA.symptoms;
+
+  document.getElementById('totCount').textContent = DATA.symptoms.length.toString();
+
+  const groupsEl = document.getElementById('groups');
+  groupsEl.innerHTML = "";
+
+  const grouped = makeGroups(filtered);
+  for (const [letter, items] of grouped) {
+    const det = document.createElement('details');
+    det.open = state.openAll || q.length>0; // se sto cercando, apro il gruppo
+    const sum = document.createElement('summary');
+    {
+    // indicator: quanti sintomi selezionati in questo gruppo (lettera)
+    const selectedInGroup = items.reduce((acc, it) => acc + (state.selected.has(it.id) ? 1 : 0), 0);
+    const pill = selectedInGroup > 0 ? `✓ ${selectedInGroup}/${items.length}` : `${items.length}`;
+    sum.innerHTML = `<span><b>${letter}</b> <span style="color:var(--muted); font-weight:500;">(${items.length})</span></span><span class="countpill">${pill}</span>`;
+  }
+    det.appendChild(sum);
+
+    const list = document.createElement('div');
+    list.className = "sym-list";
+
+    for (const s of items) {
+      const row = document.createElement('div');
+      row.className = "sym";
+      const id = `sym_${s.id}`;
+      row.innerHTML = `
+        <input type="checkbox" id="${id}" ${state.selected.has(s.id) ? "checked" : ""} />
+        <label for="${id}">${s.label}</label>
+      `;
+      const cb = row.querySelector('input');
+      cb.addEventListener('change', () => {
+        if (cb.checked) state.selected.add(s.id);
+        else state.selected.delete(s.id);
+        onSelectionChanged();
+      });
+      list.appendChild(row);
+    }
+    det.appendChild(list);
+    groupsEl.appendChild(det);
+  }
+}
+
+function scoreDiagnosis(selected, protoSet) {
+  const selSize = selected.size;
+  const protoSize = protoSet.size;
+  if (selSize === 0) return 0;
+
+  let inter = 0;
+  for (const s of selected) if (protoSet.has(s)) inter++;
+
+  const union = selSize + protoSize - inter;
+  const jaccard = union > 0 ? inter / union : 0;
+
+  // penalità leggera per sintomi extra (selezionati ma non nel prototipo)
+  const extras = selSize - inter;
+  const penalty = extras > 0 ? Math.min(0.35, extras * 0.04) : 0;
+
+  // piccolo boost per più match (favorisce diagnosi con più sovrapposizione assoluta)
+  const boost = Math.min(0.25, inter * 0.02);
+
+  return Math.max(0, jaccard - penalty + boost);
+}
+
+function computeTop() {
+  const selected = state.selected;
+  const scored = [];
+  for (const diag of DATA.diagnoses) {
+    const proto = DATA.prototypes[diag] || [];
+    const protoSet = new Set(proto);
+    const sc = scoreDiagnosis(selected, protoSet);
+    scored.push({diag, sc, proto});
+  }
+  scored.sort((a,b)=>b.sc-a.sc);
+  return scored.slice(0, 6);
+}
+
+function renderResults() {
+  const resultsEl = document.getElementById('results');
+  resultsEl.innerHTML = "";
+
+  const selCountEl = document.getElementById('selCount');
+  selCountEl.textContent = state.selected.size.toString();
+
+  if (state.selected.size === 0) {
+    resultsEl.innerHTML = `<div class="small">Seleziona alcuni sintomi per vedere le diagnosi candidate.</div>`;
+    return;
+  }
+
+  const top = computeTop();
+  const best = top[0]?.sc || 0;
+  for (const item of top) {
+    const pct = best>0 ? (item.sc / best) * 100 : 0;
+    const matches = item.proto.filter(s => state.selected.has(s));
+    const missing = item.proto.filter(s => !state.selected.has(s)).slice(0, 8);
+
+    const card = document.createElement('div');
+    card.className = "res";
+    card.innerHTML = `
+      <div class="top">
+        <div class="name">${item.diag}</div>
+        <div class="score">score: ${item.sc.toFixed(3)}</div>
+      </div>
+      <div class="bar"><div style="width:${Math.max(2, Math.min(100, pct))}%"></div></div>
+      <div class="small">
+        <b>Match:</b> ${matches.length ? matches.map(s=>S2LABEL[s]||s).join(", ") : "—"}<br/>
+        <b>Prototipo (mancanti):</b> ${missing.length ? missing.map(s=>S2LABEL[s]||s).join(", ") : "—"}
+      </div>
+    `;
+    resultsEl.appendChild(card);
+  }
+}
+
+function renderChips() {
+  const el = document.getElementById('chips');
+  el.innerHTML = "";
+  const arr = [...state.selected].map(id => S2LABEL[id] || id)
+    .sort((a,b)=>a.localeCompare(b,'it'));
+  for (const label of arr) {
+    const c = document.createElement('div');
+    c.className = "chip";
+    c.textContent = label;
+    el.appendChild(c);
+  }
+}
+
+function onSelectionChanged() {
+  // quando selezioni manualmente, nascondo la "verità" del random (se presente)
+  state.lastRandomTruth = null;
+  const truth = document.getElementById('randomTruth');
+  truth.style.display = "none";
+  truth.textContent = "";
+
+  renderChips();
+  renderResults();
+}
+
+function setAllDetails(open) {
+  state.openAll = open;
+  renderGroups();
+}
+
+function resetAll() {
+  state.selected.clear();
+  state.lastRandomTruth = null;
+  document.getElementById('randomTruth').style.display = "none";
+  renderGroups();
+  renderChips();
+  renderResults();
+}
+
+function applySelection(ids) {
+  state.selected = new Set(ids);
+  // re-render gruppi per aggiornare checkbox
+  renderGroups();
+  renderChips();
+  renderResults();
+}
+
+function randomCase() {
+  // scegli una diagnosi casuale
+  const diag = DATA.diagnoses[Math.floor(Math.random()*DATA.diagnoses.length)];
+  const proto = DATA.prototypes[diag] || [];
+
+  // scegli un sottoinsieme di sintomi dal prototipo
+  const k = Math.max(4, Math.min(proto.length, 10));
+  const shuffled = [...proto].sort(()=>Math.random()-0.5);
+  let chosen = shuffled.slice(0, k);
+
+  // aggiungi un po' di "rumore" (1-2 sintomi non nel prototipo) per renderlo realistico
+  const noiseN = Math.random() < 0.7 ? 1 : 2;
+  const all = DATA.symptoms.map(s=>s.id);
+  let tries = 0;
+  while (tries < 100 && chosen.length < k + noiseN) {
+    const cand = all[Math.floor(Math.random()*all.length)];
+    if (!chosen.includes(cand) && !proto.includes(cand)) chosen.push(cand);
+    tries++;
+  }
+
+  state.lastRandomTruth = diag;
+  const truth = document.getElementById('randomTruth');
+  truth.style.display = "inline-flex";
+  truth.textContent = `Random: patologia scelta = $Impetigine`;
+
+  applySelection(chosen);
+}
+
+document.getElementById('q').addEventListener('input', (e) => {
+  state.query = e.target.value || "";
+  renderGroups();
+});
+
+document.getElementById('btnExpand').addEventListener('click', ()=>setAllDetails(true));
+document.getElementById('btnCollapse').addEventListener('click', ()=>setAllDetails(false));
+document.getElementById('btnReset').addEventListener('click', resetAll);
+document.getElementById('btnRandom').addEventListener('click', randomCase);
+
+
+fillDiagnosisSelect();
+const diagSelect = document.getElementById('diagSelect');
+const btnShowDiag = document.getElementById('btnShowDiag');
+const btnApplyDiag = document.getElementById('btnApplyDiag');
+
+if (diagSelect) {
+  showDiagnosisPrototype(diagSelect.value);
+  diagSelect.addEventListener('change', () => showDiagnosisPrototype(diagSelect.value));
+}
+if (btnShowDiag && diagSelect) btnShowDiag.addEventListener('click', () => showDiagnosisPrototype(diagSelect.value));
+if (btnApplyDiag && diagSelect) btnApplyDiag.addEventListener('click', () => applyDiagnosisPrototype(diagSelect.value));
+
+
+// init
+renderGroups();
+renderChips();
+renderResults();
+</script>
+</body>
+</html>
